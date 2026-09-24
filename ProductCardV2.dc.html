@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex; flex-direction:column; gap:14px; width:100%; cursor:pointer;" onMouseEnter="{{ enter }}" onMouseLeave="{{ leave }}" onClick="{{ open }}">
+  <div style="position:relative; aspect-ratio:4/5; border-radius:16px; overflow:hidden; background:#EFEBE3;">
+    <div style="position:absolute; inset:0; transform:{{ imgScale }}; transition:transform .8s cubic-bezier(.2,.7,.2,1);">
+      <dc-import name="Shot" media="{{ media }}" style="position:absolute; inset:0;" hint-size="100%,100%"></dc-import>
+    </div>
+    <div style="position:absolute; inset:0; opacity:{{ altOp }}; transition:opacity .45s ease;">
+      <dc-import name="Shot" media="{{ media2 }}" style="position:absolute; inset:0;" hint-size="100%,100%"></dc-import>
+    </div>
+    <div style="position:absolute; top:10px; left:10px; right:56px; display:flex; flex-wrap:wrap; gap:6px;">
+      <sc-if value="{{ hasBadge }}" hint-placeholder-val="{{ false }}"><span style="height:26px; padding:0 10px; border-radius:999px; background:#FCFBF7; color:#1F2C26; font-size:12px; font-weight:600; display:inline-flex; align-items:center;">{{ badge }}</span></sc-if>
+      <sc-if value="{{ hasPct }}" hint-placeholder-val="{{ false }}"><span style="height:26px; padding:0 10px; border-radius:999px; background:#9A5A40; color:#FFFFFF; font-size:12px; font-weight:600; display:inline-flex; align-items:center;">{{ pctLabel }}</span></sc-if>
+    </div>
+    <button aria-label="Save to wishlist" onClick="{{ wish }}" style="position:absolute; top:8px; right:8px; width:38px; height:38px; border-radius:50%; border:0; background:rgba(252,251,247,.92); display:flex; align-items:center; justify-content:center; cursor:pointer; color:{{ heartColor }}; transform:{{ heartScale }}; transition:transform .25s cubic-bezier(.3,1.6,.5,1);"><i class="{{ heartClass }}" style="font-size:18px;"></i></button>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:6px; min-width:0; padding:0 2px;">
+    <div style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:#5E6B64;"><span style="color:#B9785D; font-size:12px; letter-spacing:1px;">★★★★★</span><span style="color:#24332C; font-weight:600;">{{ rating }}</span><span>({{ reviews }})</span></div>
+    <div style="font-family:'Bricolage Grotesque','Hanken Grotesk',sans-serif; font-optical-sizing:auto; font-size:17px; font-weight:600; letter-spacing:-.02em; line-height:1.2; color:#1F2C26;">{{ name }}</div>
+    <div style="font-size:13.5px; color:#5E6B64; line-height:1.45; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ desc }}</div>
+    <sc-if value="{{ hasSwatches }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; gap:4px; margin-left:-3px;">
+        <sc-for list="{{ swatches }}" as="sw" hint-placeholder-count="4">
+          <button aria-label="{{ sw.label }}" title="{{ sw.label }}" onClick="{{ sw.pick }}" style="width:26px; height:26px; padding:0; border:0; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span style="width:20px; height:20px; border-radius:50%; border:1px solid {{ sw.ring }}; display:flex; align-items:center; justify-content:center;"><span style="width:14px; height:14px; border-radius:50%; background:{{ sw.color }};"></span></span></button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
+      <div style="display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; flex:1; min-width:0;">
+        <span style="font-size:16px; font-weight:600; color:#1F2C26;">{{ price }}</span>
+        <sc-if value="{{ hasCompare }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px; color:#6F7A74; text-decoration:line-through;">{{ compare }}</span></sc-if>
+      </div>
+      <button onClick="{{ add }}" style="flex:none; height:40px; padding:0 16px; border-radius:999px; border:1px solid {{ btnBorder }}; background:{{ btnBg }}; color:{{ btnInk }}; font-size:13.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; transition:background .2s, color .2s, border-color .2s;" style-hover="background:#315C4B; color:#FFFFFF; border-color:#315C4B;"><i class="{{ addIcon }}" style="font-size:15px;"></i>{{ addLabel }}</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:300,&quot;height&quot;:520},&quot;p&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;touch&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { hover: false, vid: null, added: false, pop: false };
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    const p = this.props.p || {};
+    const touch = !!this.props.touch;
+    const vs = p.variants || [];
+    const v = vs.find(x => x.id === this.state.vid) || vs[0] || {};
+    const h = this.state.hover && !touch;
+    const added = this.state.added;
+    return {
+      name: p.name, desc: p.desc, badge: p.badge, hasBadge: !!p.badge,
+      rating: p.rating, reviews: p.reviews,
+      price: v.priceStr, compare: v.compareStr, hasCompare: !!v.compareStr,
+      hasPct: !!v.pct, pctLabel: '−' + (v.pct || 0) + '%',
+      media: v.media || p.media, media2: p.media2,
+      altOp: h && p.media2 ? 1 : 0, imgScale: h ? 'scale(1.04)' : 'scale(1)',
+      btnBg: added ? '#315C4B' : '#FFFFFF', btnInk: added ? '#FFFFFF' : '#1F2C26', btnBorder: added ? '#315C4B' : 'rgba(36,51,44,.22)',
+      addLabel: added ? 'Added' : 'Add', addIcon: added ? 'ph-light ph-check' : 'ph-light ph-plus',
+      heartClass: p.wished ? 'ph-fill ph-heart' : 'ph-light ph-heart',
+      heartColor: p.wished ? '#9A5A40' : '#24332C',
+      heartScale: this.state.pop ? 'scale(1.25)' : 'scale(1)',
+      hasSwatches: !!p.swatches,
+      swatches: p.swatches ? vs.map(x => ({
+        color: x.swatch, label: x.label,
+        ring: x.id === v.id ? '#24332C' : 'rgba(36,51,44,0)',
+        pick: e => { e.stopPropagation(); this.setState({ vid: x.id }); }
+      })) : [],
+      enter: () => this.setState({ hover: true }),
+      leave: () => this.setState({ hover: false }),
+      open: () => p.onOpen && p.onOpen(v.id),
+      add: e => {
+        e.stopPropagation();
+        p.onAdd && p.onAdd(v.id);
+        this.setState({ added: true });
+        clearTimeout(this.t);
+        this.t = setTimeout(() => this.setState({ added: false }), 1600);
+      },
+      wish: e => {
+        e.stopPropagation();
+        p.onWish && p.onWish();
+        this.setState({ pop: true });
+        setTimeout(() => this.setState({ pop: false }), 260);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
